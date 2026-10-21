@@ -1,0 +1,61 @@
+name: Release
+
+# Pushing a tag like v1.0.0 builds the Windows installer and publishes it as a
+# GitHub Release with that one file to download. The tag must match the version
+# in src-tauri/tauri.conf.json.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the app version
+        shell: bash
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match version $version in tauri.conf.json"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      # Updates are signed with the key in this secret; installed copies check
+      # the signature before installing anything.
+      - run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      # The installer keeps the same name in every release, so
+      # .../releases/latest/download/Duckware-Setup.exe always works.
+      # latest.json tells installed copies about the new version.
+      - name: Publish the installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe Duckware-Setup.exe
+          node scripts/update-manifest.mjs src-tauri/target/release/bundle/nsis/*-setup.exe.sig \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/Duckware-Setup.exe" latest.json
+          gh release create "$GITHUB_REF_NAME" Duckware-Setup.exe latest.json \
+            --title "Duckware ${GITHUB_REF_NAME#v}" \
+            --notes-file .github/release-notes.md

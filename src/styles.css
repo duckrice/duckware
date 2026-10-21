@@ -34,12 +34,29 @@ body {
 }
 
 #app {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   height: 100%;
   padding: 18px;
   box-sizing: border-box;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  height: 236px;
+  flex: none;
+}
+
+.tile-wrap {
+  position: relative;
+  display: flex;
+}
+
+.tile-wrap .tile {
+  flex: 1;
 }
 
 .tile {
@@ -66,6 +83,30 @@ body {
 .tile:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.tile .version {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.update-app {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--panel);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.update-app:hover {
+  filter: brightness(1.1);
 }
 
 .tile img {
@@ -101,4 +142,120 @@ body {
 
 .tile.failed .tile-text {
   color: #b42318;
+}
+
+.recent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.recent h2 {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recent-list {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.recent-file {
+  display: grid;
+  grid-template-columns: 20px minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recent-file:hover,
+.recent-file:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+
+.recent-file img {
+  width: 20px;
+  height: 20px;
+}
+
+.file-name,
+.file-folder {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.file-folder,
+.file-time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.recent-list .empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.autostart {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.launcher-version {
+  margin-left: auto;
+}
+
+.update-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.update-bar .btn {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.update-bar .btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--panel);
 }
