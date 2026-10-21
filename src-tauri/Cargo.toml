@@ -1,0 +1,26 @@
+[package]
+name = "duckware"
+version = "1.0.0"
+description = "Opens DuckWriter, Duckument and DuckNotes from one place"
+authors = ["Duckrice"]
+edition = "2021"
+
+[lib]
+# The `_lib` suffix keeps the library name from clashing with the binary on Windows,
+# see https://github.com/rust-lang/cargo/issues/8519
+name = "duckware_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde_json = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
