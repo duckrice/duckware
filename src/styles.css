@@ -1,28 +1,18 @@
+/* Dark, terminal-flavoured: near-black, thin lines, monospace for names and
+   numbers, and each app in its own colour (set on its tile as --c). */
 :root {
-  --bg: #f3f4f6;
-  --panel: #ffffff;
-  --border: #d9dde3;
-  --text: #1f2933;
-  --muted: #65707d;
-  --hover: #eef1f4;
-  --accent: #0f766e;
-  color-scheme: light;
+  --bg: #010409;
+  --panel: #0d1117;
+  --border: #21262d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --hover: #161b22;
+  --accent: #4ade80;
+  --mono: Consolas, "Cascadia Mono", monospace;
+  color-scheme: dark;
   font-family: "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
   color: var(--text);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1f2328;
-    --panel: #262b31;
-    --border: #3a4048;
-    --text: #e6e9ed;
-    --muted: #9aa4af;
-    --hover: #323840;
-    --accent: #2dd4bf;
-    color-scheme: dark;
-  }
 }
 
 html,
@@ -45,7 +35,7 @@ body {
 .tiles {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 12px;
   height: 236px;
   flex: none;
 }
@@ -67,26 +57,42 @@ body {
   gap: 6px;
   padding: 14px 10px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--panel);
   color: var(--text);
   font: inherit;
   text-align: center;
   cursor: pointer;
+  transition: border-color 0.12s;
 }
 
-.tile:hover {
-  border-color: var(--accent);
-  background: var(--hover);
-}
-
+.tile:hover,
 .tile:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  border-color: var(--c);
+  background: var(--hover);
+  outline: none;
+}
+
+.tile img {
+  width: 76px;
+  height: 76px;
+}
+
+.tile strong {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.tile span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .tile .version {
-  color: var(--muted);
+  color: var(--c);
+  font-family: var(--mono);
   font-size: 11px;
 }
 
@@ -94,34 +100,19 @@ body {
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 3px 8px;
-  border: none;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--panel);
-  font: inherit;
+  padding: 2px 8px;
+  border: 1px solid var(--c);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--c);
+  font-family: var(--mono);
   font-size: 11px;
-  font-weight: 600;
   cursor: pointer;
 }
 
 .update-app:hover {
-  filter: brightness(1.1);
-}
-
-.tile img {
-  width: 84px;
-  height: 84px;
-}
-
-.tile strong {
-  font-size: 16px;
-}
-
-.tile span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
+  background: var(--c);
+  color: var(--panel);
 }
 
 .tile.missing img,
@@ -132,8 +123,13 @@ body {
 
 .tile.missing .tile-text,
 .tile.installing .tile-text {
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--c);
+  font-family: var(--mono);
+}
+
+.tile.missing .tile-text::before {
+  content: "$ ";
+  color: var(--muted);
 }
 
 .tile:disabled {
@@ -141,7 +137,7 @@ body {
 }
 
 .tile.failed .tile-text {
-  color: #b42318;
+  color: #f85149;
 }
 
 .recent {
@@ -154,36 +150,43 @@ body {
 .recent h2 {
   margin: 0 0 6px;
   color: var(--muted);
+  font-family: var(--mono);
   font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 400;
 }
 
 .recent-list {
   flex: 1;
   margin: 0;
-  padding: 0;
+  padding: 4px 0;
   overflow-y: auto;
   list-style: none;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--panel);
+  scrollbar-color: var(--border) transparent;
 }
 
 .recent-file {
   display: grid;
-  grid-template-columns: 20px minmax(0, auto) minmax(0, 1fr) auto;
+  grid-template-columns: 12px 18px minmax(0, auto) minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border: none;
   background: none;
   color: var(--text);
   font: inherit;
+  font-family: var(--mono);
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
+}
+
+.recent-file::before {
+  content: ">";
+  color: var(--border);
 }
 
 .recent-file:hover,
@@ -192,9 +195,14 @@ body {
   outline: none;
 }
 
+.recent-file:hover::before,
+.recent-file:focus-visible::before {
+  color: var(--accent);
+}
+
 .recent-file img {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .file-name,
@@ -213,6 +221,7 @@ body {
 .recent-list .empty {
   padding: 12px;
   color: var(--muted);
+  font-family: var(--mono);
   font-size: 12px;
 }
 
@@ -222,6 +231,7 @@ footer {
   gap: 14px;
   flex: none;
   color: var(--muted);
+  font-family: var(--mono);
   font-size: 12px;
 }
 
@@ -233,6 +243,10 @@ footer {
   cursor: pointer;
 }
 
+.autostart input {
+  accent-color: var(--accent);
+}
+
 .launcher-version {
   margin-left: auto;
 }
@@ -241,13 +255,13 @@ footer {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text);
+  color: var(--accent);
 }
 
 .update-bar .btn {
-  padding: 3px 10px;
+  padding: 2px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--panel);
   color: var(--text);
   font: inherit;
@@ -256,6 +270,5 @@ footer {
 
 .update-bar .btn.primary {
   border-color: var(--accent);
-  background: var(--accent);
-  color: var(--panel);
+  color: var(--accent);
 }

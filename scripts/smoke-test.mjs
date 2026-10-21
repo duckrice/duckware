@@ -84,9 +84,9 @@ await session(9701, env, async ({ evaluate, ipc, errors }) => {
   check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true, true]), JSON.stringify(tiles));
   for (let i = 0; i < 40 && !(await evaluate(`!!(document.querySelector(".update-app") && document.querySelector(".recent-file"))`)); i++) await sleep(150);
   const version = await evaluate(`document.querySelector(".tile .version")?.textContent`);
-  check("an installed app shows its version", /^Version \d+\.\d+\.\d+$/.test(version ?? ""), version);
+  check("an installed app shows its version", /^v\d+\.\d+\.\d+$/.test(version ?? ""), version);
   const badges = await evaluate(`[...document.querySelectorAll(".tile-wrap")].map((w) => w.querySelector(".update-app")?.textContent ?? "")`);
-  check("and offers its update; apps not installed don't", JSON.stringify(badges) === JSON.stringify(["Update to 99.0.0", "", "", ""]), JSON.stringify(badges));
+  check("and offers its update; apps not installed don't", JSON.stringify(badges) === JSON.stringify(["update → v99.0.0", "", "", ""]), JSON.stringify(badges));
   const files = await evaluate(`[...document.querySelectorAll(".recent-file")].map((b) => [b.querySelector(".file-name").textContent, b.querySelector("img").alt])`);
   check("recent documents: only ones that exist and an app opens", JSON.stringify(files) === JSON.stringify([["Lecture notes.docx", "DuckWriter"]]), JSON.stringify(files));
 
@@ -103,16 +103,16 @@ await session(9701, env, async ({ evaluate, ipc, errors }) => {
   for (let i = 0; i < 40 && (await evaluate(`!!document.querySelector(".tile.installing")`)); i++) await sleep(150);
   check("the update button installs the latest release", JSON.stringify(calls().at(-1)) === JSON.stringify(["install", { index: 0 }]), JSON.stringify(calls().at(-1)));
   const after = await evaluate(`[document.querySelector(".tile .version")?.textContent, document.querySelectorAll(".update-app").length].join()`);
-  check("and the tile then has that version", after === "Version 99.0.0,0", after);
+  check("and the tile then has that version", after === "v99.0.0,0", after);
 
   const box = `document.querySelector(".autostart input")`;
   check("not started with Windows at first", (await evaluate(`${box}.checked`)) === false);
   await evaluate(`${box}.click()`);
-  for (let i = 0; i < 40 && !registered(); i++) await sleep(150);
+  for (let i = 0; i < 40 && !(registered() && (await evaluate(`${box}.checked`))); i++) await sleep(150);
   const ticked = [registered(), await evaluate(`${box}.checked`)].join();
   check("ticking Start with Windows registers the launcher", ticked === "true,true", ticked);
   await evaluate(`${box}.click()`);
-  for (let i = 0; i < 40 && registered(); i++) await sleep(150);
+  for (let i = 0; i < 40 && (registered() || (await evaluate(`${box}.checked`))); i++) await sleep(150);
   const unticked = [registered(), await evaluate(`${box}.checked`)].join();
   check("and unticking removes it", unticked === "false,false", unticked);
   check("no errors", errors.length === 0, errors.join("; "));

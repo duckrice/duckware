@@ -11,10 +11,10 @@ import { h } from "./dom";
 import { offerUpdate } from "./updates";
 
 const APPS = [
-  { name: "DuckWriter", what: "Write documents, open Word files and PDFs", icon: "duckwriter.svg" },
-  { name: "Duckument", what: "Sign, fill in and edit PDFs", icon: "duckument.svg" },
-  { name: "DuckNotes", what: "Notes for lectures, with drawing", icon: "ducknotes.svg" },
-  { name: "DuckSheets", what: "Spreadsheets, open and save Excel files", icon: "ducksheets.svg" },
+  { name: "DuckWriter", what: "Write documents, open Word files and PDFs", icon: "duckwriter.png", color: "#22d3ee" },
+  { name: "Duckument", what: "Sign, fill in and edit PDFs", icon: "duckument.png", color: "#f59e0b" },
+  { name: "DuckNotes", what: "Notes for lectures, with drawing", icon: "ducknotes.png", color: "#a78bfa" },
+  { name: "DuckSheets", what: "Spreadsheets, open and save Excel files", icon: "ducksheets.png", color: "#4ade80" },
 ];
 
 type State = "installed" | "missing" | "installing" | "failed";
@@ -29,7 +29,7 @@ const tiles = h("div", { class: "tiles" });
 const recentList = h("ul", { class: "recent-list" });
 const autostart = h("input", { type: "checkbox" });
 const footer = h("footer", {}, h("label", { class: "autostart" }, autostart, "Start with Windows"));
-document.getElementById("app")!.append(tiles, h("section", { class: "recent" }, h("h2", {}, "Recent documents"), recentList), footer);
+document.getElementById("app")!.append(tiles, h("section", { class: "recent" }, h("h2", {}, "~/recent"), recentList), footer);
 
 let states: State[] = [];
 /** Installed versions ("" when unknown), and the latest released ones. */
@@ -70,10 +70,10 @@ function tile(index: number): HTMLElement {
     h("img", { src: icon, alt: "" }),
     h("strong", {}, name),
     h("span", { class: "tile-text" }, text),
-    state === "installed" && versions[index] && h("small", { class: "version" }, `Version ${versions[index]}`),
+    state === "installed" && versions[index] && h("small", { class: "version" }, `v${versions[index]}`),
   );
-  const updateButton = update && h("button", { type: "button", class: "update-app", title: `Download and install ${name} ${update}`, onclick: () => void installApp(index) }, `Update to ${update}`);
-  return h("div", { class: "tile-wrap" }, button, updateButton);
+  const updateButton = update && h("button", { type: "button", class: "update-app", title: `Download and install ${name} ${update}`, onclick: () => void installApp(index) }, `update → v${update}`);
+  return h("div", { class: "tile-wrap", style: `--c: ${APPS[index].color}` }, button, updateButton);
 }
 
 function show() {
@@ -153,7 +153,7 @@ async function start() {
       console.error(error);
     }
   });
-  footer.append(h("span", { class: "launcher-version" }, `Duckware ${await getVersion()}`));
+  footer.append(h("span", { class: "launcher-version" }, `duckware v${await getVersion()}`));
 
   // These go online or look through Windows' recent files: show the tiles first.
   void invoke<Recent[]>("recent").then(showRecent);
