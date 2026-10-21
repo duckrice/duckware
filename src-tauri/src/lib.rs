@@ -38,6 +38,45 @@ fn launch(index: usize, app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// The installer every Duckware release publishes under the same name, e.g. DuckSheets-Setup.exe.
+fn installer_url(index: usize) -> Option<String> {
+    let (name, _, page) = APPS.get(index)?;
+    Some(format!("{}/download/{}-Setup.exe", page, name))
+}
+
+/// Downloads an app's installer from its latest release and runs it (passive:
+/// a progress bar, no questions). Resolves when it's installed.
+#[tauri::command]
+async fn install(index: usize) -> Result<(), String> {
+    let url = installer_url(index).ok_or("No such app.")?;
+    if testing() {
+        return Ok(());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let (name, _, _) = APPS[index];
+        let setup = std::env::temp_dir().join(format!("{name}-Setup.exe"));
+        // Windows' own curl: follows GitHub's redirect, and fails rather than saving an error page.
+        let got = std::process::Command::new("curl.exe")
+            .args(["--fail", "--location", "--silent", "--show-error", "--output"])
+            .arg(&setup)
+            .arg(&url)
+            .output()
+            .map_err(|e| format!("Couldn't start the download: {e}"))?;
+        if !got.status.success() {
+            let why = String::from_utf8_lossy(&got.stderr);
+            return Err(if why.contains("404") { format!("{name} hasn't been released yet.") } else { format!("The download failed: {}", why.trim()) });
+        }
+        let done = std::process::Command::new(&setup).arg("/P").status().map_err(|e| format!("Couldn't run the installer: {e}"));
+        let _ = std::fs::remove_file(&setup);
+        match done? {
+            s if s.success() => Ok(()),
+            _ => Err(format!("{name}'s installer stopped before it finished.")),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Opens an app's download page in the browser.
 #[tauri::command]
 fn download(index: usize) -> Result<(), String> {
@@ -65,7 +104,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![installed, launch, download])
+        .invoke_handler(tauri::generate_handler![installed, launch, download, install])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -83,12 +83,22 @@ body {
   line-height: 1.35;
 }
 
-.tile.missing img {
+.tile.missing img,
+.tile.installing img {
   opacity: 0.35;
   filter: grayscale(1);
 }
 
-.tile.missing span {
+.tile.missing .tile-text,
+.tile.installing .tile-text {
   color: var(--accent);
   font-weight: 600;
+}
+
+.tile:disabled {
+  cursor: progress;
+}
+
+.tile.failed .tile-text {
+  color: #b42318;
 }

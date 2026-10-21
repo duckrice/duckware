@@ -72,7 +72,8 @@ await session(9701, { DUCKWARE_APPS_DIR: apps }, async ({ evaluate, ipc, errors 
   await evaluate(`document.querySelectorAll(".tile")[2].click()`);
   await sleep(500);
   const calls = ipc.filter(([cmd]) => cmd !== "installed").map(([cmd, body]) => `${cmd} ${JSON.parse(body).index}`);
-  check("clicking DuckWriter opens it, clicking DuckNotes opens its download page", JSON.stringify(calls) === JSON.stringify(["launch 0", "download 2"]), JSON.stringify(calls));
+  check("clicking DuckWriter opens it, clicking DuckNotes installs it", JSON.stringify(calls) === JSON.stringify(["launch 0", "install 2"]), JSON.stringify(calls));
+  check("and its tile is then an app to open", await evaluate(`document.querySelectorAll(".tile")[2].classList.contains("installed")`));
   check("no errors", errors.length === 0, errors.join("; "));
 });
 
