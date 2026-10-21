@@ -1,10 +1,11 @@
 use std::path::PathBuf;
 
 /// The Duckware apps: name, program file, and where to download it.
-const APPS: [(&str, &str, &str); 3] = [
+const APPS: [(&str, &str, &str); 4] = [
     ("DuckWriter", "duckwriter.exe", "https://github.com/duckrice/duckwriter/releases/latest"),
     ("Duckument", "duckument.exe", "https://github.com/duckrice/duckument/releases/latest"),
     ("DuckNotes", "ducknotes.exe", "https://github.com/duckrice/ducknotes/releases/latest"),
+    ("DuckSheets", "ducksheets.exe", "https://github.com/duckrice/ducksheets/releases/latest"),
 ];
 
 /// Where an app is installed: each installer puts it in %LOCALAPPDATA%\<name>.

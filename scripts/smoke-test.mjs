@@ -50,7 +50,7 @@ async function session(port, env, run) {
   const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true })).result?.result?.value;
   await send("Runtime.enable");
   await send("Network.enable");
-  for (let i = 0; i < 40 && !(await evaluate(`document.querySelectorAll(".tile").length === 3`)); i++) await sleep(150);
+  for (let i = 0; i < 40 && !(await evaluate(`document.querySelectorAll(".tile").length === 4`)); i++) await sleep(150);
   try {
     await run({ evaluate, ipc, errors, send });
   } finally {
@@ -66,8 +66,8 @@ writeFileSync(join(apps, "DuckWriter", "duckwriter.exe"), "");
 
 await session(9701, { DUCKWARE_APPS_DIR: apps }, async ({ evaluate, ipc, errors }) => {
   const tiles = await evaluate(`[...document.querySelectorAll(".tile")].map((t) => [t.querySelector("strong").textContent, t.classList.contains("missing")])`);
-  check("a tile for each app", JSON.stringify(tiles?.map((t) => t[0])) === JSON.stringify(["DuckWriter", "Duckument", "DuckNotes"]), JSON.stringify(tiles));
-  check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true]), JSON.stringify(tiles));
+  check("a tile for each app", JSON.stringify(tiles?.map((t) => t[0])) === JSON.stringify(["DuckWriter", "Duckument", "DuckNotes", "DuckSheets"]), JSON.stringify(tiles));
+  check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true, true]), JSON.stringify(tiles));
   await evaluate(`document.querySelectorAll(".tile")[0].click()`);
   await evaluate(`document.querySelectorAll(".tile")[2].click()`);
   await sleep(500);

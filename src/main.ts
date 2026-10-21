@@ -1,5 +1,5 @@
 // The Duckware launcher: one icon on the taskbar, a tile for each app.
-// Clicking a tile (or pressing 1, 2 or 3) opens it and closes the launcher.
+// Clicking a tile (or pressing its number) opens it and closes the launcher.
 
 import "./styles.css";
 import { invoke } from "@tauri-apps/api/core";
@@ -9,6 +9,7 @@ const APPS = [
   { name: "DuckWriter", what: "Write documents, open Word files and PDFs", icon: "duckwriter.svg" },
   { name: "Duckument", what: "Sign, fill in and edit PDFs", icon: "duckument.svg" },
   { name: "DuckNotes", what: "Notes for lectures, with drawing", icon: "ducknotes.svg" },
+  { name: "DuckSheets", what: "Spreadsheets, open and save Excel files", icon: "ducksheets.svg" },
 ];
 
 const app = document.getElementById("app")!;
