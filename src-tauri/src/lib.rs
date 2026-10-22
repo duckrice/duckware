@@ -21,15 +21,21 @@ fn testing() -> bool {
     std::env::var_os("DUCKWARE_TEST_OFFSCREEN").is_some()
 }
 
-/// Runs a PowerShell command and returns what it printed. No window flashes up.
-fn powershell(script: &str) -> Option<String> {
-    let mut command = Command::new("powershell");
-    command.args(["-NoProfile", "-NonInteractive", "-Command", script]);
+/// A command that runs without a console window flashing up.
+fn hidden(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(program);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
+    command
+}
+
+/// Runs a PowerShell command and returns what it printed.
+fn powershell(script: &str) -> Option<String> {
+    let mut command = hidden("powershell");
+    command.args(["-NoProfile", "-NonInteractive", "-Command", script]);
     let out = command.output().ok()?;
     out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
@@ -60,7 +66,7 @@ async fn latest() -> Vec<Option<String>> {
         .map(|(_, _, page, _)| {
             let url = format!("{page}/download/latest.json");
             std::thread::spawn(move || {
-                let out = Command::new("curl.exe").args(["--fail", "--location", "--silent", "--max-time", "15", &url]).output().ok()?;
+                let out = hidden("curl.exe").args(["--fail", "--location", "--silent", "--max-time", "15", &url]).output().ok()?;
                 let json: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
                 json.get("version")?.as_str().map(str::to_string)
             })
@@ -145,7 +151,7 @@ fn run_key() -> &'static str {
 #[tauri::command]
 fn autostart(on: Option<bool>) -> Result<bool, String> {
     if let Some(on) = on {
-        let mut command = Command::new("reg");
+        let mut command = hidden("reg");
         if on {
             let exe = std::env::current_exe().map_err(|e| e.to_string())?;
             command.args(["add", run_key(), "/v", "Duckware", "/t", "REG_SZ", "/f", "/d"]).arg(format!("\"{}\"", exe.display()));
@@ -157,11 +163,11 @@ fn autostart(on: Option<bool>) -> Result<bool, String> {
             return Err("Windows didn't allow it.".into());
         }
     }
-    Ok(Command::new("reg").args(["query", run_key(), "/v", "Duckware"]).output().map(|o| o.status.success()).unwrap_or(false))
+    Ok(hidden("reg").args(["query", run_key(), "/v", "Duckware"]).output().map(|o| o.status.success()).unwrap_or(false))
 }
 
-/// Downloads an app's installer from its latest release and runs it (passive:
-/// a progress bar, no questions). Installs, or updates an installed app. Resolves when done.
+/// Downloads an app's installer from its latest release and runs it silently, so
+/// nothing but the launcher's own progress shows. Installs, or updates an installed app. Resolves when done.
 #[tauri::command]
 async fn install(index: usize) -> Result<(), String> {
     let (name, _, page, _) = *APPS.get(index).ok_or("No such app.")?;
@@ -172,7 +178,7 @@ async fn install(index: usize) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let setup = std::env::temp_dir().join(format!("{name}-Setup.exe"));
         // Windows' own curl: follows GitHub's redirect, and fails rather than saving an error page.
-        let got = Command::new("curl.exe")
+        let got = hidden("curl.exe")
             .args(["--fail", "--location", "--silent", "--show-error", "--output"])
             .arg(&setup)
             .arg(&url)
@@ -182,7 +188,7 @@ async fn install(index: usize) -> Result<(), String> {
             let why = String::from_utf8_lossy(&got.stderr);
             return Err(if why.contains("404") { format!("{name} hasn't been released yet.") } else { format!("The download failed: {}", why.trim()) });
         }
-        let done = Command::new(&setup).arg("/P").status().map_err(|e| format!("Couldn't run the installer: {e}"));
+        let done = hidden(&setup).arg("/S").status().map_err(|e| format!("Couldn't run the installer: {e}"));
         let _ = std::fs::remove_file(&setup);
         match done? {
             s if s.success() => Ok(()),
