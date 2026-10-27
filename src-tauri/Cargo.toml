@@ -1,6 +1,6 @@
 [package]
 name = "duckware"
-version = "1.1.1"
+version = "1.2.0"
 description = "Opens DuckWriter, Duckument, DuckNotes and DuckSheets from one place"
 authors = ["Duckrice"]
 edition = "2021"

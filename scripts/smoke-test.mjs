@@ -66,12 +66,16 @@ async function session(port, env, run) {
 const apps = join(work, "apps");
 mkdirSync(join(apps, "DuckWriter"), { recursive: true });
 copyFileSync(exe, join(apps, "DuckWriter", "duckwriter.exe"));
+mkdirSync(join(apps, "DuckSheets"), { recursive: true });
+copyFileSync(exe, join(apps, "DuckSheets", "ducksheets.exe"));
+const sheet = join(work, "Budget.xlsx");
+writeFileSync(sheet, "");
 // Recent files: one to show, one that's gone, one no app opens.
 const doc = join(work, "Lecture notes.docx");
 writeFileSync(doc, "");
 writeFileSync(join(work, "notes.txt"), "");
-const recent = [`1700000000000|${doc}`, `1600000000000|${join(work, "gone.docx")}`, `1500000000000|${join(work, "notes.txt")}`].join("\n");
-const env = { DUCKWARE_APPS_DIR: apps, DUCKWARE_TEST_LATEST: "99.0.0,99.0.0,,", DUCKWARE_TEST_RECENT: recent };
+const recent = [`1700000000000|${doc}`, `1650000000000|${sheet}`, `1600000000000|${join(work, "gone.docx")}`, `1500000000000|${join(work, "notes.txt")}`].join("\n");
+const env = { DUCKWARE_APPS_DIR: apps, DUCKWARE_TEST_LATEST: "99.0.0,99.0.0,,99.0.0", DUCKWARE_TEST_RECENT: recent };
 // Test copies keep "start with Windows" in a key of their own.
 const testRun = "HKCU\\Software\\Duckware\\TestRun";
 const registered = () => spawnSync("reg", ["query", testRun, "/v", "Duckware"], { stdio: "ignore" }).status === 0;
@@ -81,14 +85,24 @@ clearRun();
 await session(9701, env, async ({ evaluate, ipc, errors }) => {
   const tiles = await evaluate(`[...document.querySelectorAll(".tile")].map((t) => [t.querySelector("strong").textContent, t.classList.contains("missing")])`);
   check("a tile for each app", JSON.stringify(tiles?.map((t) => t[0])) === JSON.stringify(["DuckWriter", "Duckument", "DuckNotes", "DuckSheets"]), JSON.stringify(tiles));
-  check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true, true]), JSON.stringify(tiles));
+  check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true, false]), JSON.stringify(tiles));
   for (let i = 0; i < 40 && !(await evaluate(`!!(document.querySelector(".update-app") && document.querySelector(".recent-file"))`)); i++) await sleep(150);
   const version = await evaluate(`document.querySelector(".tile .version")?.textContent`);
   check("an installed app shows its version", /^v\d+\.\d+\.\d+$/.test(version ?? ""), version);
   const badges = await evaluate(`[...document.querySelectorAll(".tile-wrap")].map((w) => w.querySelector(".update-app")?.textContent ?? "")`);
-  check("and offers its update; apps not installed don't", JSON.stringify(badges) === JSON.stringify(["update → v99.0.0", "", "", ""]), JSON.stringify(badges));
+  check("and offers its update; apps not installed don't", JSON.stringify(badges) === JSON.stringify(["update → v99.0.0", "", "", "update → v99.0.0"]), JSON.stringify(badges));
   const files = await evaluate(`[...document.querySelectorAll(".recent-file")].map((b) => [b.querySelector(".file-name").textContent, b.querySelector("img").alt])`);
-  check("recent documents: only ones that exist and an app opens", JSON.stringify(files) === JSON.stringify([["Lecture notes.docx", "DuckWriter"]]), JSON.stringify(files));
+  check("recent documents: only ones that exist and an app opens", JSON.stringify(files) === JSON.stringify([["Lecture notes.docx", "DuckWriter"], ["Budget.xlsx", "DuckSheets"]]), JSON.stringify(files));
+
+  check("two updates waiting: an update-all button", (await evaluate(`document.querySelector(".update-all").hidden ? "" : document.querySelector(".update-all").textContent`)) === "update all (2) →");
+  const names = () => evaluate(`[...document.querySelectorAll(".recent-file .file-name")].map((n) => n.textContent).join()`);
+  await evaluate(`document.querySelectorAll(".pin")[1].click()`);
+  check("a pinned document goes to the top", (await names()) === "Budget.xlsx,Lecture notes.docx", await names());
+  await evaluate(`(() => { const s = document.querySelector(".recent-search"); s.value = "lect"; s.dispatchEvent(new Event("input")); })()`);
+  check("search filters recent documents", (await names()) === "Lecture notes.docx", await names());
+  await evaluate(`(() => { const s = document.querySelector(".recent-search"); s.value = ""; s.dispatchEvent(new Event("input")); })()`);
+  await evaluate(`document.querySelectorAll(".pin")[0].click()`);
+  check("and unpinning puts it back", (await names()) === "Lecture notes.docx,Budget.xlsx", await names());
 
   const calls = () => ipc.filter(([cmd]) => cmd === "launch" || cmd === "install").map(([cmd, body]) => [cmd, JSON.parse(body)]);
   await evaluate(`document.querySelectorAll(".tile")[0].click()`);
@@ -103,7 +117,8 @@ await session(9701, env, async ({ evaluate, ipc, errors }) => {
   for (let i = 0; i < 40 && (await evaluate(`!!document.querySelector(".tile.installing")`)); i++) await sleep(150);
   check("the update button installs the latest release", JSON.stringify(calls().at(-1)) === JSON.stringify(["install", { index: 0 }]), JSON.stringify(calls().at(-1)));
   const after = await evaluate(`[document.querySelector(".tile .version")?.textContent, document.querySelectorAll(".update-app").length].join()`);
-  check("and the tile then has that version", after === "v99.0.0,0", after);
+  check("and the tile then has that version", after === "v99.0.0,1", after);
+  check("one update left: no update-all button", await evaluate(`document.querySelector(".update-all").hidden`));
 
   const box = `document.querySelector(".autostart input")`;
   check("not started with Windows at first", (await evaluate(`${box}.checked`)) === false);
