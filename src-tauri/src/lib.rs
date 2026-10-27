@@ -55,11 +55,18 @@ async fn apps() -> Vec<Option<String>> {
     .unwrap_or_default()
 }
 
-/// For each app, the version of its latest release (null if it can't be found).
+/// For each app, the version of its latest release and what's new in it (null if it can't be found).
 #[tauri::command]
-async fn latest() -> Vec<Option<String>> {
+async fn latest() -> Vec<Option<(String, String)>> {
     if let Ok(test) = std::env::var("DUCKWARE_TEST_LATEST") {
-        return test.split(',').map(|s| (!s.is_empty()).then(|| s.to_string())).collect();
+        // "version|what's new" for each app, comma-separated.
+        return test
+            .split(',')
+            .map(|s| (!s.is_empty()).then(|| {
+                let (version, notes) = s.split_once('|').unwrap_or((s, ""));
+                (version.to_string(), notes.to_string())
+            }))
+            .collect();
     }
     let lookups: Vec<_> = APPS
         .iter()
@@ -68,7 +75,8 @@ async fn latest() -> Vec<Option<String>> {
             std::thread::spawn(move || {
                 let out = hidden("curl.exe").args(["--fail", "--location", "--silent", "--max-time", "15", &url]).output().ok()?;
                 let json: serde_json::Value = serde_json::from_slice(&out.stdout).ok()?;
-                json.get("version")?.as_str().map(str::to_string)
+                let notes = json.get("notes").and_then(|n| n.as_str()).unwrap_or_default().to_string();
+                json.get("version")?.as_str().map(|v| (v.to_string(), notes))
             })
         })
         .collect();

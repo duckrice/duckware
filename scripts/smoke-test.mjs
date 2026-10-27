@@ -75,7 +75,7 @@ const doc = join(work, "Lecture notes.docx");
 writeFileSync(doc, "");
 writeFileSync(join(work, "notes.txt"), "");
 const recent = [`1700000000000|${doc}`, `1650000000000|${sheet}`, `1600000000000|${join(work, "gone.docx")}`, `1500000000000|${join(work, "notes.txt")}`].join("\n");
-const env = { DUCKWARE_APPS_DIR: apps, DUCKWARE_TEST_LATEST: "99.0.0,99.0.0,,99.0.0", DUCKWARE_TEST_RECENT: recent };
+const env = { DUCKWARE_APPS_DIR: apps, DUCKWARE_TEST_LATEST: "99.0.0|Faster saving,99.0.0,,99.0.0", DUCKWARE_TEST_RECENT: recent };
 // Test copies keep "start with Windows" in a key of their own.
 const testRun = "HKCU\\Software\\Duckware\\TestRun";
 const registered = () => spawnSync("reg", ["query", testRun, "/v", "Duckware"], { stdio: "ignore" }).status === 0;
@@ -94,6 +94,8 @@ await session(9701, env, async ({ evaluate, ipc, errors }) => {
   const files = await evaluate(`[...document.querySelectorAll(".recent-file")].map((b) => [b.querySelector(".file-name").textContent, b.querySelector("img").alt])`);
   check("recent documents: only ones that exist and an app opens", JSON.stringify(files) === JSON.stringify([["Lecture notes.docx", "DuckWriter"], ["Budget.xlsx", "DuckSheets"]]), JSON.stringify(files));
 
+  const news = await evaluate(`[...document.querySelectorAll(".tile-wrap")].map((w) => w.querySelector(".whats-new")?.textContent ?? "")`);
+  check("an update says what's new in it, when its release says", JSON.stringify(news) === JSON.stringify(["new: Faster saving", "", "", ""]), JSON.stringify(news));
   check("two updates waiting: an update-all button", (await evaluate(`document.querySelector(".update-all").hidden ? "" : document.querySelector(".update-all").textContent`)) === "update all (2) →");
   const names = () => evaluate(`[...document.querySelectorAll(".recent-file .file-name")].map((n) => n.textContent).join()`);
   await evaluate(`document.querySelectorAll(".pin")[1].click()`);

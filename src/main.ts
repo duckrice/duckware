@@ -38,6 +38,8 @@ let states: State[] = [];
 /** Installed versions ("" when unknown), and the latest released ones. */
 let versions: (string | null)[] = [];
 let latest: (string | null)[] = [];
+/** What's new in each latest release, as its update says. */
+let notes: string[] = [];
 const errors: string[] = [];
 
 /** Whether version a is older than b ("1.2.0" < "1.10.0"). */
@@ -76,7 +78,9 @@ function tile(index: number): HTMLElement {
     state === "installed" && versions[index] && h("small", { class: "version" }, `v${versions[index]}`),
   );
   const updateButton = update && h("button", { type: "button", class: "update-app", title: `Download and install ${name} ${update}`, onclick: () => void installApp(index) }, `update → v${update}`);
-  return h("div", { class: "tile-wrap", style: `--c: ${APPS[index].color}` }, button, updateButton);
+  // What the update brings, unless it only says its own name and version.
+  const news = update && notes[index] && !/^\S+ [\d.]+$/.test(notes[index]) ? h("small", { class: "whats-new", title: notes[index] }, `new: ${notes[index]}`) : null;
+  return h("div", { class: "tile-wrap", style: `--c: ${APPS[index].color}` }, button, updateButton, news);
 }
 
 function show() {
@@ -204,8 +208,9 @@ async function start() {
 
   // These go online or look through Windows' recent files: show the tiles first.
   void invoke<Recent[]>("recent").then(showRecent);
-  void invoke<(string | null)[]>("latest").then((found) => {
-    latest = found;
+  void invoke<([string, string] | null)[]>("latest").then((found) => {
+    latest = found.map((f) => f?.[0] ?? null);
+    notes = found.map((f) => f?.[1] ?? "");
     show();
   });
   void offerUpdate(footer, { beforeInstall: async () => true });
