@@ -29,7 +29,7 @@ interface Recent {
 const tiles = h("div", { class: "tiles" });
 const recentList = h("ul", { class: "recent-list" });
 const autostart = h("input", { type: "checkbox" });
-const footer = h("footer", {}, h("label", { class: "autostart" }, autostart, "Start with Windows"));
+const footer = h("footer", {}, h("label", { class: "autostart" }, autostart, /Linux/.test(navigator.userAgent) ? "Start when I sign in" : "Start with Windows"));
 const search = h("input", { type: "search", class: "recent-search", placeholder: "search…", "aria-label": "Search recent documents" }) as HTMLInputElement;
 const updateAll = h("button", { type: "button", class: "update-all", hidden: true, onclick: () => void updateEverything() });
 document.getElementById("app")!.append(updateAll, tiles, h("section", { class: "recent" }, h("div", { class: "recent-head" }, h("h2", {}, "~/recent"), search), recentList), footer);

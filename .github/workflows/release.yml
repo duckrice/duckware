@@ -2,7 +2,7 @@ name: Release
 
 # Pushing a tag like v1.0.0 builds the Windows installer and the Linux AppImage and .deb, and
 # publishes them as a GitHub Release. The tag must match the version in src-tauri/tauri.conf.json.
-# Run by hand (workflow_dispatch), it only builds for Linux, to try that build without releasing.
+# Run by hand (workflow_dispatch), it builds and tests both without releasing anything.
 on:
   push:
     tags: ["v*"]
@@ -13,12 +13,12 @@ permissions:
 
 jobs:
   windows:
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Check the tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           version=$(node -p "require('./src-tauri/tauri.conf.json').version")
@@ -51,6 +51,7 @@ jobs:
       # .../releases/latest/download/Duckware-Setup.exe always works.
       # latest.json tells installed copies about the new version.
       - name: Publish the installer
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,7 +67,6 @@ jobs:
   # and a .deb, added to the same release, and latest.json told about the AppImage too.
   linux:
     needs: windows
-    if: always() && (needs.windows.result == 'success' || (needs.windows.result == 'skipped' && github.event_name == 'workflow_dispatch'))
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +93,9 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      # The Rust side's own tests (the Linux spelling, OCR and launcher code among them).
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --release
 
       - name: Name the files the same in every release
         run: |
