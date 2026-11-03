@@ -1,17 +1,19 @@
 name: Release
 
-# Pushing a tag like v1.0.0 builds the Windows installer and publishes it as a
-# GitHub Release with that one file to download. The tag must match the version
-# in src-tauri/tauri.conf.json.
+# Pushing a tag like v1.0.0 builds the Windows installer and the Linux AppImage and .deb, and
+# publishes them as a GitHub Release. The tag must match the version in src-tauri/tauri.conf.json.
+# Run by hand (workflow_dispatch), it only builds for Linux, to try that build without releasing.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   windows:
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,3 +61,60 @@ jobs:
           gh release create "$GITHUB_REF_NAME" Duckware-Setup.exe latest.json \
             --title "Duckware ${GITHUB_REF_NAME#v}" \
             --notes-file .github/release-notes.md
+
+  # After the Windows release: the AppImage (which updates itself, as the Windows version does)
+  # and a .deb, added to the same release, and latest.json told about the AppImage too.
+  linux:
+    needs: windows
+    if: always() && (needs.windows.result == 'success' || (needs.windows.result == 'skipped' && github.event_name == 'workflow_dispatch'))
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install what Tauri needs on Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev build-essential file
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - run: npm run tauri build -- --bundles appimage,deb
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      - name: Name the files the same in every release
+        run: |
+          cp src-tauri/target/release/bundle/appimage/*.AppImage Duckware-x86_64.AppImage
+          cp src-tauri/target/release/bundle/appimage/*.AppImage.sig Duckware-x86_64.AppImage.sig
+          cp src-tauri/target/release/bundle/deb/*.deb Duckware-amd64.deb
+          ls -l Duckware-*
+
+      # A build run by hand keeps its files for a few days, to try them.
+      - if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: Duckware-*
+          retention-days: 3
+
+      - name: Add them to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" -p latest.json
+          node scripts/update-manifest.mjs Duckware-x86_64.AppImage.sig \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/Duckware-x86_64.AppImage" latest.json linux-x86_64
+          gh release upload "$GITHUB_REF_NAME" Duckware-x86_64.AppImage Duckware-amd64.deb latest.json --clobber

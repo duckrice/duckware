@@ -1,12 +1,14 @@
 // Writes latest.json, the file installed copies of Duckware read to find out
 // whether there is a newer version, and where and how to verify it.
-//   node scripts/update-manifest.mjs <installer.exe.sig> <download url> <out file>
+//   node scripts/update-manifest.mjs <installer.sig> <download url> <out file> [platform]
+// The platform is windows-x86_64 unless given (linux-x86_64 for the AppImage); an existing
+// out file for the same version keeps its other platforms, so one file serves both systems.
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const [signatureFile, url, out] = process.argv.slice(2);
+const [signatureFile, url, out, platform = "windows-x86_64"] = process.argv.slice(2);
 if (!signatureFile || !url || !out) {
   console.error("usage: node scripts/update-manifest.mjs <installer.exe.sig> <download url> <out file>");
   process.exit(1);
@@ -26,12 +28,14 @@ function whatsNew() {
   return `Duckware ${version}`;
 }
 
+const earlier = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : null;
 const manifest = {
   version,
   notes: whatsNew(),
   pub_date: new Date().toISOString(),
   platforms: {
-    "windows-x86_64": {
+    ...(earlier?.version === version ? earlier.platforms : {}),
+    [platform]: {
       signature: readFileSync(signatureFile, "utf8").trim(),
       url,
     },
