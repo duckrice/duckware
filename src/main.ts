@@ -16,6 +16,7 @@ const APPS = [
   { name: "Duckument", what: "Sign, fill in and edit PDFs", icon: "duckument.png", color: "#f59e0b", opens: ["pdf"] },
   { name: "DuckNotes", what: "Notes for lectures, with drawing", icon: "ducknotes.png", color: "#a78bfa", opens: [] as string[] },
   { name: "DuckSheets", what: "Spreadsheets, open and save Excel files", icon: "ducksheets.png", color: "#4ade80", opens: ["xlsx", "xlsm", "csv"] },
+  { name: "DuckSlides", what: "Slide shows, open and save PowerPoint files", icon: "duckslides.png", color: "#fb923c", opens: ["pptx", "ppsx", "pptm"] },
 ];
 
 type State = "installed" | "missing" | "installing" | "failed";
@@ -142,7 +143,7 @@ function showRecent(all: Recent[]) {
       );
     }),
   );
-  if (!recent.length) recentList.append(h("li", { class: "empty" }, query ? "Nothing matches." : "Documents you open in Word, Excel, PDF readers or Duckware show up here."));
+  if (!recent.length) recentList.append(h("li", { class: "empty" }, query ? "Nothing matches." : "Documents you open in Word, Excel, PowerPoint, PDF readers or Duckware show up here."));
 }
 
 async function open(index: number) {

@@ -2,11 +2,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// The Duckware apps: name, program file, where to download it, and the files it opens.
-const APPS: [(&str, &str, &str, &[&str]); 4] = [
+const APPS: [(&str, &str, &str, &[&str]); 5] = [
     ("DuckWriter", "duckwriter.exe", "https://github.com/duckrice/duckwriter/releases/latest", &["docx", "docm", "dotx", "dotm", "doc", "rtf", "odt"]),
     ("Duckument", "duckument.exe", "https://github.com/duckrice/duckument/releases/latest", &["pdf"]),
     ("DuckNotes", "ducknotes.exe", "https://github.com/duckrice/ducknotes/releases/latest", &[]),
     ("DuckSheets", "ducksheets.exe", "https://github.com/duckrice/ducksheets/releases/latest", &["xlsx", "xlsm", "csv"]),
+    ("DuckSlides", "duckslides.exe", "https://github.com/duckrice/duckslides/releases/latest", &["pptx", "ppsx", "pptm"]),
 ];
 
 /// Where an app is installed: each Windows installer puts it in %LOCALAPPDATA%\<name>.

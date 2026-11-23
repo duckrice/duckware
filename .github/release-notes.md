@@ -1,4 +1,4 @@
-Duckware is one icon for your taskbar that opens DuckWriter, Duckument, DuckNotes and DuckSheets. It installs the ones you don't have yet, shows which have updates, lists the documents you opened lately, and can start when you sign in.
+Duckware is one icon for your taskbar that opens DuckWriter, Duckument, DuckNotes, DuckSheets and DuckSlides. It installs the ones you don't have yet, shows which have updates, lists the documents you opened lately, and can start when you sign in.
 
 ## Install on Windows
 

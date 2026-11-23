@@ -84,7 +84,7 @@ clearRun();
 
 await session(9701, env, async ({ evaluate, ipc, errors }) => {
   const tiles = await evaluate(`[...document.querySelectorAll(".tile")].map((t) => [t.querySelector("strong").textContent, t.classList.contains("missing")])`);
-  check("a tile for each app", JSON.stringify(tiles?.map((t) => t[0])) === JSON.stringify(["DuckWriter", "Duckument", "DuckNotes", "DuckSheets"]), JSON.stringify(tiles));
+  check("a tile for each app", JSON.stringify(tiles?.map((t) => t[0])) === JSON.stringify(["DuckWriter", "Duckument", "DuckNotes", "DuckSheets", "DuckSlides"]), JSON.stringify(tiles));
   check("installed apps open, others offer a download", JSON.stringify(tiles?.map((t) => t[1])) === JSON.stringify([false, true, true, false]), JSON.stringify(tiles));
   for (let i = 0; i < 40 && !(await evaluate(`!!(document.querySelector(".update-app") && document.querySelector(".recent-file"))`)); i++) await sleep(150);
   const version = await evaluate(`document.querySelector(".tile .version")?.textContent`);
